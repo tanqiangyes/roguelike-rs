@@ -2,6 +2,8 @@ use rltk::{BError, GameState, Rltk, RltkBuilder, VirtualKeyCode, RGB};
 use specs::prelude::*;
 use specs_derive::Component;
 use std::cmp::{max, min};
+use std::process::id;
+
 fn main() -> BError {
     let context = RltkBuilder::simple80x50()
         .with_title("roguelike game")
@@ -9,8 +11,9 @@ fn main() -> BError {
     let mut gs = State { ecs: World::new() };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
-    gs.ecs.register::<LeftMove>();
     gs.ecs.register::<Player>();
+
+    gs.ecs.insert(new_map());
 
     gs.ecs
         .create_entity()
@@ -22,18 +25,6 @@ fn main() -> BError {
         })
         .with(Player {})
         .build();
-    for i in 0..10 {
-        gs.ecs
-            .create_entity()
-            .with(Position { x: i * 7, y: 20 })
-            .with(Renderable {
-                glyph: rltk::to_cp437('☺'),
-                fg: RGB::named(rltk::RED),
-                bg: RGB::named(rltk::BLACK),
-            })
-            .with(LeftMove {})
-            .build();
-    }
 
     rltk::main_loop(context, gs)
 }
@@ -44,8 +35,6 @@ struct State {
 
 impl State {
     fn run_system(&mut self) {
-        let mut lw = LeftWorker {};
-        lw.run_now(&self.ecs);
         self.ecs.maintain();
     }
 }
@@ -56,6 +45,9 @@ impl GameState for State {
 
         player_input(self, ctx);
         self.run_system();
+
+        let map = self.ecs.fetch::<Vec<TileType>>();
+        draw_map(&map, ctx);
 
         let position = self.ecs.read_storage::<Position>();
         let renderable = self.ecs.read_storage::<Renderable>();
@@ -79,33 +71,19 @@ struct Renderable {
 }
 
 #[derive(Component)]
-struct LeftMove {}
-
-struct LeftWorker {}
-
-impl<'a> System<'a> for LeftWorker {
-    type SystemData = (ReadStorage<'a, LeftMove>, WriteStorage<'a, Position>);
-
-    fn run(&mut self, (lefty, mut pos): Self::SystemData) {
-        for (_lefty, pos) in (&lefty, &mut pos).join() {
-            pos.x -= 1;
-            if pos.x < 0 {
-                pos.x = 79;
-            }
-        }
-    }
-}
-
-#[derive(Component)]
 struct Player {}
 
 fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut position = ecs.write_storage::<Position>();
     let mut player = ecs.write_storage::<Player>();
+    let map = ecs.fetch::<Vec<TileType>>();
 
     for (pos, _player) in (&mut position, &mut player).join() {
-        pos.x = min(79, max(0, pos.x + delta_x));
-        pos.y = min(49, max(0, pos.y + delta_y));
+        let destination_idx = xy_idx(pos.x + delta_x, pos.y + delta_y);
+        if map[destination_idx] != TileType::Wall {
+            pos.x = min(79, max(0, pos.x + delta_x));
+            pos.y = min(49, max(0, pos.y + delta_y));
+        }
     }
 }
 
@@ -117,5 +95,75 @@ fn player_input(gs: &mut State, ctx: &mut Rltk) {
         Some(key) if key == VirtualKeyCode::Up => try_move_player(0, -1, &mut gs.ecs),
         Some(key) if key == VirtualKeyCode::Down => try_move_player(0, 1, &mut gs.ecs),
         _ => {}
+    }
+}
+
+#[derive(PartialEq, Copy, Clone)]
+enum TileType {
+    Wall,
+    Floor,
+}
+
+pub fn xy_idx(x: i32, y: i32) -> usize {
+    (y as usize * 80) + x as usize
+}
+
+fn new_map() -> Vec<TileType> {
+    let mut map = vec![TileType::Floor; 80 * 50];
+
+    for x in 0..80 {
+        map[xy_idx(x, 0)] = TileType::Wall;
+        map[xy_idx(x, 49)] = TileType::Wall;
+    }
+
+    for y in 0..50 {
+        map[xy_idx(0, y)] = TileType::Wall;
+        map[xy_idx(79, y)] = TileType::Wall;
+    }
+
+    let mut rng = rltk::RandomNumberGenerator::new();
+
+    let const_num = xy_idx(40, 25);
+    for _x in 0..400 {
+        let x = rng.roll_dice(1, 79);
+        let y = rng.roll_dice(1, 49);
+        let idx = xy_idx(x, y);
+        if idx != const_num {
+            map[idx] = TileType::Wall;
+        }
+    }
+
+    map
+}
+
+fn draw_map(tiles: &[TileType], ctx: &mut Rltk) {
+    let mut x = 0;
+    let mut y = 0;
+    for tile in tiles.iter() {
+        match tile {
+            TileType::Wall => {
+                ctx.set(
+                    x,
+                    y,
+                    RGB::from_f32(0.0, 1.0, 0.0),
+                    RGB::from_f32(0., 0., 0.),
+                    rltk::to_cp437('#'),
+                );
+            }
+            TileType::Floor => {
+                ctx.set(
+                    x,
+                    y,
+                    RGB::from_f32(0.5, 0.5, 0.5),
+                    RGB::from_f32(0., 0., 0.),
+                    rltk::to_cp437('.'),
+                );
+            }
+        }
+        x += 1;
+        if x > 79 {
+            x = 0;
+            y += 1;
+        }
     }
 }
