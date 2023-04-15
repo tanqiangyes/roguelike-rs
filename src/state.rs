@@ -1,6 +1,7 @@
 use crate::components::{Position, Renderable};
-use crate::map::{draw_map, TileType};
+use crate::map::draw_map;
 use crate::player::player_input;
+use crate::visibility_system::VisibilitySystem;
 use rltk::{GameState, Rltk};
 use specs::prelude::*;
 use specs::World;
@@ -11,6 +12,8 @@ pub struct State {
 
 impl State {
     fn run_systems(&mut self) {
+        let mut vis = VisibilitySystem {};
+        vis.run_now(&self.ecs);
         self.ecs.maintain();
     }
 }
@@ -22,8 +25,7 @@ impl GameState for State {
         player_input(self, ctx);
         self.run_systems();
 
-        let map = self.ecs.fetch::<Vec<TileType>>();
-        draw_map(&map, ctx);
+        draw_map(&self.ecs, ctx);
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
