@@ -28,7 +28,7 @@ impl<'a> System<'a> for VisibilitySystem {
 
                 // If this is the player, reveal what they can see
                 let p: Option<&Player> = player.get(entities);
-                if let Some(_) = p {
+                if p.is_some() {
                     for t in map.visible_tiles.iter_mut() {
                         *t = false
                     }
