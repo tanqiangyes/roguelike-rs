@@ -5,8 +5,9 @@ mod player;
 mod rect;
 mod state;
 mod visibility_system;
+mod map_indexing_system;
 
-use crate::components::{Monster, Name, Player, Position, Renderable, Viewshed};
+use crate::components::{BlocksTile, Monster, Name, Player, Position, Renderable, Viewshed};
 use crate::map::Map;
 use crate::state::{RunState, State};
 use rltk::{BError, Point, RandomNumberGenerator, RltkBuilder, RGB};
@@ -26,6 +27,7 @@ fn main() -> BError {
     gs.ecs.register::<Viewshed>();
     gs.ecs.register::<Monster>();
     gs.ecs.register::<Name>();
+    gs.ecs.register::<BlocksTile>();
 
     let map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();
@@ -46,6 +48,7 @@ fn main() -> BError {
                 name = "Orc".to_string();
             }
         }
+        // npc
         gs.ecs
             .create_entity()
             .with(Position { x, y })
@@ -63,10 +66,12 @@ fn main() -> BError {
             .with(Name {
                 name: format!("{}_num_{}", &name, i),
             })
+            .with(BlocksTile{})
             .build();
     }
     gs.ecs.insert(map);
 
+    // player
     gs.ecs
         .create_entity()
         .with(Position {

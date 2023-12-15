@@ -1,5 +1,5 @@
 use crate::components::{Player, Position, Viewshed};
-use crate::map::{Map, TileType};
+use crate::map::Map;
 use crate::state::{RunState, State};
 use rltk::{Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
@@ -16,7 +16,7 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
         ppos.x = pos.x;
         ppos.y = pos.y;
         let destination_idx = map.xy_idx(pos.x + delta_x, pos.y + delta_y);
-        if map.tiles[destination_idx] != TileType::Wall {
+        if !map.blocked[destination_idx] {
             pos.x = min(79, max(0, pos.x + delta_x));
             pos.y = min(49, max(0, pos.y + delta_y));
             viewshed.dirty = true;
@@ -45,6 +45,22 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
 
             VirtualKeyCode::Down | VirtualKeyCode::Numpad2 | VirtualKeyCode::J => {
                 try_move_player(0, 1, &mut gs.ecs)
+            }
+
+            VirtualKeyCode::Numpad9 | VirtualKeyCode::Y => {
+                try_move_player(1, -1, &mut gs.ecs)
+            }
+
+            VirtualKeyCode::Numpad7 | VirtualKeyCode::U => {
+                try_move_player(-1, -1, &mut gs.ecs)
+            }
+
+            VirtualKeyCode::Numpad3 | VirtualKeyCode::N => {
+                try_move_player(1, 1, &mut gs.ecs)
+            }
+
+            VirtualKeyCode::Numpad1 | VirtualKeyCode::B => {
+                try_move_player(-1, 1, &mut gs.ecs)
             }
 
             _ => {

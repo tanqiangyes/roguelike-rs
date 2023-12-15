@@ -6,6 +6,7 @@ use crate::visibility_system::VisibilitySystem;
 use rltk::{GameState, Rltk};
 use specs::prelude::*;
 use specs::World;
+use crate::map_indexing_system::MapIndexingSystem;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -24,6 +25,8 @@ impl State {
         vis.run_now(&self.ecs);
         let mut mon = MonitorAi {};
         mon.run_now(&self.ecs);
+        let mut mapindex =  MapIndexingSystem{};
+        mapindex.run_now(&self.ecs);
         self.ecs.maintain();
     }
 }
