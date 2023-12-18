@@ -18,9 +18,10 @@ use rltk::{BError, Point, RandomNumberGenerator, RltkBuilder, RGB};
 use specs::prelude::*;
 
 fn main() -> BError {
-    let context = RltkBuilder::simple80x50()
+    let mut context = RltkBuilder::simple80x50()
         .with_title("roguelike game")
         .build()?;
+    context.with_post_scanlines(true);
     let mut gs = State {
         ecs: World::new(),
     };
