@@ -4,9 +4,9 @@ use specs::prelude::*;
 use crate::map::Map;
 use crate::state::RunState;
 
-pub struct MonitorAi {}
+pub struct MonsterAI {}
 
-impl<'a> System<'a> for MonitorAi {
+impl<'a> System<'a> for MonsterAI {
     #[allow(clippy::type_complexity)]
     type SystemData = (
         WriteExpect<'a, Map>,
