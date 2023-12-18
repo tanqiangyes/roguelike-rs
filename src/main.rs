@@ -8,6 +8,7 @@ mod visibility_system;
 mod map_indexing_system;
 mod melee_combat_system;
 mod damage_system;
+mod gui;
 
 use crate::components::{BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, SufferDamage, Viewshed, WantsToMelee};
 use crate::map::Map;
