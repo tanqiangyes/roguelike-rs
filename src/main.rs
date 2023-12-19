@@ -15,6 +15,7 @@ mod melee_combat_system;
 mod damage_system;
 mod state;
 use state::{State,RunState};
+
 mod gui;
 mod gamelog;
 mod spawner;
@@ -42,6 +43,7 @@ fn main() -> BError {
     gs.ecs.register::<Potion>();
     gs.ecs.register::<InBackpack>();
     gs.ecs.register::<WantsToPickupItem>();
+    gs.ecs.register::<WantsToDrinkPotion>();
 
     let map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();

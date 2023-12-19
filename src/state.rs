@@ -6,9 +6,9 @@ use crate::visibility_system::VisibilitySystem;
 use rltk::{GameState, Rltk};
 use specs::prelude::*;
 use specs::World;
-use crate::{damage_system, gui};
+use crate::{damage_system, gui, WantsToDrinkPotion};
 use crate::damage_system::DamageSystem;
-use crate::inventory_system::ItemCollectionSystem;
+use crate::inventory_system::{ItemCollectionSystem, PotionUseSystem};
 use crate::map_indexing_system::MapIndexingSystem;
 use crate::melee_combat_system::MeleeCombatSystem;
 
@@ -18,6 +18,7 @@ pub enum RunState {
     PreRun,
     PlayerTurn,
     MonsterTurn,
+    ShowInventory,
 }
 
 pub struct State {
@@ -38,6 +39,8 @@ impl State {
         damage.run_now(&self.ecs);
         let mut pickup = ItemCollectionSystem{};
         pickup.run_now(&self.ecs);
+        let mut potions = PotionUseSystem{};
+        potions.run_now(&self.ecs);
         self.ecs.maintain();
     }
 }
@@ -84,6 +87,19 @@ impl GameState for State {
                 self.run_systems();
                 self.ecs.maintain();
                 newrunstate = RunState::AwaitingInput;
+            }
+            RunState::ShowInventory => {
+                let result = gui::show_inventory(self, ctx);
+                match result.0 {
+                    gui::ItemMenuResult::Cancel => newrunstate = RunState::AwaitingInput,
+                    gui::ItemMenuResult::NoResponse => {}
+                    gui::ItemMenuResult::Selected => {
+                        let item_entity = result.1.unwrap();
+                        let mut intent = self.ecs.write_storage::<WantsToDrinkPotion>();
+                        intent.insert(*self.ecs.fetch::<Entity>(), WantsToDrinkPotion{ potion: item_entity }).expect("Unable to insert intent");
+                        newrunstate = RunState::PlayerTurn;
+                    }
+                }
             }
         }
 
